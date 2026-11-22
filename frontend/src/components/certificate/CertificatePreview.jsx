@@ -6,7 +6,7 @@ import { Logo } from '../common/Logo';
 export const CertificatePreview = ({ data, settings, innerRef }) => {
   const {
     candidateName = 'Isha Sharma',
-    certificateId = 'C2C-2026-JD-94046',
+    certificateId = 'C2C-INT-2026-48271',
     domain = 'Java Development',
     duration = '1 Month',
     startDate = '2026-10-22',
@@ -146,7 +146,7 @@ export const CertificatePreview = ({ data, settings, innerRef }) => {
               CERTIFICATE ID:
             </span>
             <span className="text-xs sm:text-[13px] font-bold font-mono text-[#2563EB] tracking-wide block">
-              {certificateId || 'C2C-2026-JD-94046'}
+              {certificateId || 'C2C-INT-2026-48271'}
             </span>
           </div>
 

@@ -127,8 +127,8 @@ async function runQrVerificationSuite() {
 
   const testCertificates = [
     { id: 'C2C-2026-WD-35034', name: 'Rohan Gupta (Production Example)' },
-    { id: 'C2C-2026-JD-94046', name: 'Isha Sharma (Default Preview)' },
-    { id: 'C2C-INT-2026-00125', name: 'Aarav Sharma (Sequential Format)' }
+    { id: 'C2C-INT-2026-48271', name: 'New Standardized Random ID' },
+    { id: 'C2C-INT-2026-73519', name: 'New Standardized Random ID (2)' }
   ];
 
   for (const cert of testCertificates) {

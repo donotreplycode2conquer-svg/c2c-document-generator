@@ -30,7 +30,7 @@ export const GenerateCertificatePage = () => {
 
     return {
       candidateName: 'Isha Sharma',
-      certificateId: 'C2C-2026-JD-94046',
+      certificateId: 'C2C-INT-2026-48271',
       domain: 'Java Development',
       duration: defaultDuration,
       startDate: defaultStartDate,
@@ -69,10 +69,17 @@ export const GenerateCertificatePage = () => {
     try {
       const idRes = await certificateService.getNextIdPreview();
       if (idRes.success && idRes.nextCertificateId) {
-        setFormData((prev) => ({
-          ...prev,
-          certificateId: prev.certificateId === 'C2C-INT-2026-00001' ? idRes.nextCertificateId : prev.certificateId
-        }));
+        setFormData((prev) => {
+          const isLegacyOrDraft =
+            !prev.certificateId ||
+            prev.certificateId.startsWith('C2C-2026-JD') ||
+            prev.certificateId.startsWith('C2C-INT-2026-000') ||
+            prev.certificateId === 'C2C-INT-2026-48271';
+          return {
+            ...prev,
+            certificateId: isLegacyOrDraft ? idRes.nextCertificateId : prev.certificateId
+          };
+        });
       }
     } catch (e) {
       console.warn('Could not fetch next certificate ID:', e);
@@ -107,7 +114,7 @@ export const GenerateCertificatePage = () => {
     storage.clearDraftCert();
     setFormData({
       candidateName: 'Isha Sharma',
-      certificateId: 'C2C-2026-JD-94046',
+      certificateId: 'C2C-INT-2026-48271',
       domain: 'Java Development',
       duration: '1 Month',
       startDate: defaultStartDate,
@@ -119,6 +126,7 @@ export const GenerateCertificatePage = () => {
     setClientRequestId('req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9));
     setErrorMessage(null);
     setSuccessData(null);
+    handleRefreshId();
   };
 
   const handleIssueCertificate = async () => {

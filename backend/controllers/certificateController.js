@@ -1,6 +1,10 @@
 const Certificate = require('../models/Certificate');
 const DocumentHistory = require('../models/DocumentHistory');
-const { getNextCertificateId, peekNextCertificateId } = require('../services/idGeneratorService');
+const {
+  generateUniqueCertificateId,
+  getNextCertificateId,
+  peekNextCertificateId
+} = require('../services/idGeneratorService');
 const { getDbStatus } = require('../config/db');
 const logger = require('../utils/logger');
 
@@ -46,90 +50,131 @@ const registerCertificate = async (req, res) => {
       }
     }
 
-    let certificateId = customCertificateId ? customCertificateId.trim().toUpperCase() : null;
+    const year = issueDate
+      ? new Date(issueDate).getFullYear()
+      : (startDate ? new Date(startDate).getFullYear() : new Date().getFullYear());
 
-    if (certificateId) {
-      // Validate format: C2C-YYYY-XX-XXXXX or C2C-INT-YYYY-XXXXX
+    let requestedId = customCertificateId ? customCertificateId.trim().toUpperCase() : null;
+
+    if (requestedId) {
+      // Validate format: historical C2C-YYYY-XX-XXXXX or standardized C2C-INT-YYYY-XXXXX
       const certIdRegex = /^C2C(-[A-Z0-9]+){2,5}$/i;
-      if (!certIdRegex.test(certificateId)) {
+      if (!certIdRegex.test(requestedId)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid Certificate ID format. Format must match: C2C-YYYY-XX-XXXXX or C2C-INT-YYYY-XXXXX (e.g. C2C-2026-JD-94046)'
+          message: 'Invalid Certificate ID format. Format must match: C2C-INT-YYYY-XXXXX (e.g. C2C-INT-2026-48271)'
         });
       }
-
-      // Check if already taken
-      const idExists = await Certificate.findOne({ certificateId });
-      if (idExists) {
-        return res.status(409).json({
-          success: false,
-          message: `Certificate ID "${certificateId}" is already registered in the database. Please use a unique ID.`
-        });
-      }
-    } else {
-      // Concurrency-safe atomic ID generation
-      const year = startDate ? new Date(startDate).getFullYear() : new Date().getFullYear();
-      certificateId = await getNextCertificateId(year);
     }
 
-    // Create Certificate record
-    const certificate = new Certificate({
-      certificateId,
-      holderName: holderName.trim(),
-      program: 'Internship Program',
-      domain: domain.trim(),
-      duration: duration.trim(),
-      startDate: new Date(startDate),
-      completionDate: new Date(completionDate),
-      issueDate: issueDate ? new Date(issueDate) : new Date(),
-      qrEnabled: Boolean(qrEnabled),
-      status: 'valid',
-      signatoryDesignation: signatoryDesignation.trim(),
-      clientRequestId: clientRequestId || undefined,
-      metadata: {
-        registeredBy: req.admin ? req.admin.username : 'admin',
-        ipAddress: req.ip,
-        userAgent: req.get('user-agent')
-      }
-    });
+    // Safe certificate issuance with duplicate-key concurrency handling
+    const MAX_SAVE_ATTEMPTS = 5;
+    let savedCertificate = null;
+    let lastError = null;
 
-    await certificate.save();
+    for (let attempt = 1; attempt <= MAX_SAVE_ATTEMPTS; attempt++) {
+      let candidateId;
+
+      if (requestedId && attempt === 1) {
+        // Check MongoDB Atlas code2conquer.certificates for existing matching ID
+        const idExists = await Certificate.exists({ certificateId: requestedId });
+        if (idExists) {
+          logger.warn(`Requested certificate ID "${requestedId}" is already registered. Generating a fresh unique C2C-INT-YYYY-XXXXX ID...`);
+          candidateId = await generateUniqueCertificateId(year);
+          requestedId = null; // Clear so subsequent retries generate new IDs
+        } else {
+          candidateId = requestedId;
+        }
+      } else {
+        candidateId = await generateUniqueCertificateId(year);
+      }
+
+      try {
+        const certificate = new Certificate({
+          certificateId: candidateId,
+          holderName: holderName.trim(),
+          program: 'Internship Program',
+          domain: domain.trim(),
+          duration: duration.trim(),
+          startDate: startDate ? new Date(startDate) : undefined,
+          completionDate: completionDate ? new Date(completionDate) : undefined,
+          issueDate: issueDate ? new Date(issueDate) : new Date(),
+          qrEnabled: Boolean(qrEnabled),
+          status: 'valid',
+          signatoryDesignation: signatoryDesignation.trim(),
+          clientRequestId: clientRequestId || undefined,
+          metadata: {
+            registeredBy: req.admin ? req.admin.username : 'admin',
+            ipAddress: req.ip,
+            userAgent: req.get('user-agent')
+          }
+        });
+
+        savedCertificate = await certificate.save();
+        break; // Successfully saved into MongoDB Atlas!
+      } catch (saveErr) {
+        lastError = saveErr;
+
+        if (saveErr.code === 11000) {
+          // Check if duplicate on clientRequestId (idempotency key for double-clicks)
+          if (
+            saveErr.keyPattern?.clientRequestId ||
+            (saveErr.message && saveErr.message.includes('clientRequestId'))
+          ) {
+            const existing = await Certificate.findOne({ clientRequestId });
+            if (existing) {
+              return res.status(200).json({
+                success: true,
+                isDuplicateSubmission: true,
+                message: 'Certificate already registered with this request identifier.',
+                certificate: existing
+              });
+            }
+          }
+
+          // Duplicate key on certificateId: log and retry with a new unique random 5-digit ID
+          logger.warn(`MongoDB unique index duplicate-key collision on certificateId "${candidateId}" (attempt ${attempt}/${MAX_SAVE_ATTEMPTS}). Retrying with fresh ID...`);
+          requestedId = null;
+          continue;
+        }
+
+        // Rethrow any non-duplicate-key error
+        throw saveErr;
+      }
+    }
+
+    if (!savedCertificate) {
+      throw lastError || new Error('Failed to save certificate after multiple attempts.');
+    }
 
     // Log to DocumentHistory
     try {
       await DocumentHistory.create({
-        documentId: certificate.certificateId,
+        documentId: savedCertificate.certificateId,
         documentType: 'CERTIFICATE',
-        candidateName: certificate.holderName,
-        domain: certificate.domain,
-        duration: certificate.duration,
-        issueDate: certificate.issueDate,
-        startDate: certificate.startDate,
-        endDate: certificate.completionDate,
-        qrEnabled: certificate.qrEnabled,
+        candidateName: savedCertificate.holderName,
+        domain: savedCertificate.domain,
+        duration: savedCertificate.duration,
+        issueDate: savedCertificate.issueDate,
+        startDate: savedCertificate.startDate,
+        endDate: savedCertificate.completionDate,
+        qrEnabled: savedCertificate.qrEnabled,
         status: 'VALID',
-        signatoryDesignation: certificate.signatoryDesignation
+        signatoryDesignation: savedCertificate.signatoryDesignation
       });
     } catch (historyErr) {
       logger.warn('Failed to record certificate in DocumentHistory:', historyErr.message);
     }
 
-    logger.info(`Successfully issued and registered Certificate: ${certificate.certificateId} for ${certificate.holderName}`);
+    logger.info(`Successfully issued and registered Certificate: ${savedCertificate.certificateId} for ${savedCertificate.holderName}`);
 
     return res.status(201).json({
       success: true,
       message: 'Certificate registered successfully in central database.',
-      certificate
+      certificate: savedCertificate
     });
   } catch (err) {
     logger.error('Error registering certificate:', err);
-
-    if (err.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        message: 'A certificate with this ID or Request Identifier already exists in the database.'
-      });
-    }
 
     return res.status(500).json({
       success: false,

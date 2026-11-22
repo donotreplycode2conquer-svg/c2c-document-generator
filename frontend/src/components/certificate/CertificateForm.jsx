@@ -210,13 +210,13 @@ export const CertificateForm = ({
         <input
           type="text"
           required
-          placeholder="e.g. C2C-INT-2026-00001"
+          placeholder="e.g. C2C-INT-2026-48271"
           value={formData.certificateId || ''}
           onChange={(e) => onChange({ ...formData, certificateId: e.target.value.toUpperCase() })}
           className="w-full px-3.5 py-2 text-sm font-mono rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-transparent transition uppercase"
         />
         <p className="text-[11px] text-slate-400 mt-1">
-          Atomic database counter guarantees unique sequential numbering.
+          Standard format: C2C-INT-YYYY-XXXXX (unique random 5-digit suffix).
         </p>
       </div>
 
