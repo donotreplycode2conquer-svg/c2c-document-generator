@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+
+# Environment variables & secrets (CRITICAL: Never commit .env files)
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+**/*.env
+!.env.example
+!**/.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+
+# Build output
+dist/
+**/dist/
+frontend/dist/
+build/
+**/build/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local Generated PDFs (kept locally by admin, not committed to git)
+generated-pdfs/offer-letters/*.pdf
+generated-pdfs/certificates/*.pdf
+!generated-pdfs/offer-letters/.gitkeep
+!generated-pdfs/certificates/.gitkeep
