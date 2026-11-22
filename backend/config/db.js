@@ -22,6 +22,7 @@ const connectDB = async () => {
     mongoose.set('strictQuery', false);
 
     const options = {
+      dbName: 'code2conquer',
       serverSelectionTimeoutMS: 8000,
       connectTimeoutMS: 10000,
       autoIndex: true

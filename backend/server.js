@@ -83,13 +83,15 @@ app.get('/api/health', (req, res) => {
     return res.status(503).json({
       success: false,
       message: 'Code2Conquer API is running, but database is disconnected',
-      database: 'disconnected'
+      database: 'disconnected',
+      dbName: dbStatus.database
     });
   }
   return res.status(200).json({
     success: true,
     message: 'Code2Conquer API is running',
-    database: 'connected'
+    database: 'connected',
+    dbName: dbStatus.database
   });
 });
 
