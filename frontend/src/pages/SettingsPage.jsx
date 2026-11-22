@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { offerLetterService } from '../services/offerLetterService';
 import { storage } from '../utils/storage';
+import { OFFICIAL_VERIFICATION_PORTAL_URL, getVerificationBaseUrl } from '../utils/qrGenerator';
 import {
   Settings,
   Database,
@@ -30,7 +31,7 @@ export const SettingsPage = () => {
     companyAddress: '',
     companyWebsite: '',
     authorizedSignatoryDesignation: 'Authorised Signatory',
-    verificationBaseUrl: 'https://code2conquer.com',
+    verificationBaseUrl: getVerificationBaseUrl(),
     defaultCertificateDesign: 'navy-blue',
     defaultOfferLetterDesign: 'corporate-classic',
     companyLogoBase64: '',
@@ -45,15 +46,17 @@ export const SettingsPage = () => {
       try {
         const res = await offerLetterService.getSettings();
         if (res.success && res.settings) {
+          const sanitizedUrl = getVerificationBaseUrl(res.settings.verificationBaseUrl);
           setFormData((prev) => ({
             ...prev,
-            ...res.settings
+            ...res.settings,
+            verificationBaseUrl: sanitizedUrl
           }));
         }
       } catch (err) {
         console.warn('Could not load settings from server, using local defaults:', err.message);
         const cached = storage.getSettings();
-        if (cached) setFormData((prev) => ({ ...prev, ...cached }));
+        if (cached) setFormData((prev) => ({ ...prev, ...cached, verificationBaseUrl: getVerificationBaseUrl(cached.verificationBaseUrl) }));
       } finally {
         setLoading(false);
       }
@@ -314,7 +317,7 @@ export const SettingsPage = () => {
                 className="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-navy-900 font-mono"
               />
               <p className="text-[11px] text-slate-400 mt-1">
-                Embedded in QR codes as: {formData.verificationBaseUrl}/verify/C2C-INT-YYYY-XXXXX
+                Embedded in QR codes as: {getVerificationBaseUrl(formData.verificationBaseUrl)}/verify/C2C-2026-WD-35034
               </p>
             </div>
           </div>

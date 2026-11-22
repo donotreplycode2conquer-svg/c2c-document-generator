@@ -18,6 +18,15 @@ const envOrigins = (process.env.FRONTEND_ORIGIN || '')
 
 const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 
+const rawPublicVerifyUrl = (process.env.PUBLIC_VERIFY_BASE_URL || '').trim();
+const publicVerifyBaseUrl =
+  rawPublicVerifyUrl &&
+  !rawPublicVerifyUrl.includes('code2conquer.com') &&
+  !rawPublicVerifyUrl.includes('localhost') &&
+  rawPublicVerifyUrl.includes('c2c-verification-portal.vercel.app')
+    ? rawPublicVerifyUrl.replace(/\/+$/, '')
+    : 'https://c2c-verification-portal.vercel.app';
+
 const config = {
   port: parseInt(process.env.PORT, 10) || 5000,
   mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/code2conquer_docs',
@@ -27,7 +36,7 @@ const config = {
   adminPassword: process.env.ADMIN_PASSWORD || 'admin123',
   adminPasswordHash: process.env.ADMIN_PASSWORD_HASH || '',
   frontendOrigin: allowedOrigins,
-  publicVerifyBaseUrl: process.env.PUBLIC_VERIFY_BASE_URL || 'https://c2c-verification-portal.vercel.app',
+  publicVerifyBaseUrl,
   isProduction: process.env.NODE_ENV === 'production'
 };
 

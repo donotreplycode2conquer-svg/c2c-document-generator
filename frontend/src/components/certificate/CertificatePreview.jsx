@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { formatDateDisplay } from '../../utils/formatters';
-import { generateQrDataUrl, buildVerificationUrl } from '../../utils/qrGenerator';
+import { generateQrDataUrl, buildVerificationUrl, getVerificationBaseUrl } from '../../utils/qrGenerator';
 import { Logo } from '../common/Logo';
 
 export const CertificatePreview = ({ data, settings, innerRef }) => {
@@ -17,7 +17,7 @@ export const CertificatePreview = ({ data, settings, innerRef }) => {
   } = data || {};
 
   const companyName = 'Code2Conquer Pvt. Ltd.';
-  const verificationBaseUrl = settings?.verificationBaseUrl || import.meta.env.VITE_VERIFICATION_PORTAL_URL || 'https://c2c-verification-portal.vercel.app';
+  const verificationBaseUrl = getVerificationBaseUrl(settings?.verificationBaseUrl);
 
   const [qrDataUrl, setQrDataUrl] = useState('');
   const verificationUrl = buildVerificationUrl(certificateId, verificationBaseUrl);
@@ -183,10 +183,16 @@ export const CertificatePreview = ({ data, settings, innerRef }) => {
                   <img
                     src={qrDataUrl}
                     alt="Scan to Verify"
+                    data-qr-url={verificationUrl}
+                    data-qr-loaded="true"
                     className="w-20 h-20 sm:w-22 sm:h-22 object-contain"
                   />
                 ) : (
-                  <div className="w-20 h-20 sm:w-22 sm:h-22 bg-slate-100 flex items-center justify-center text-[9px] text-slate-400">
+                  <div
+                    data-qr-url={verificationUrl}
+                    data-qr-loaded="false"
+                    className="w-20 h-20 sm:w-22 sm:h-22 bg-slate-100 flex items-center justify-center text-[9px] text-slate-400"
+                  >
                     Generating QR...
                   </div>
                 )}
@@ -221,7 +227,7 @@ export const CertificatePreview = ({ data, settings, innerRef }) => {
                 OFFICIALLY VERIFIED CREDENTIAL
               </span>
               <span className="text-[8px] text-slate-500 font-mono mt-0.5 block">
-                Verify online at: {settings?.verificationBaseUrl ? settings.verificationBaseUrl.replace(/^https?:\/\//, '') : 'code2conquer.com'}
+                Verify online at: {verificationBaseUrl.replace(/^https?:\/\//, '')}
               </span>
             </div>
           )}

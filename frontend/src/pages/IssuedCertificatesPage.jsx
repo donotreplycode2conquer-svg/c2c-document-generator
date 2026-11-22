@@ -4,6 +4,7 @@ import { offerLetterService } from '../services/offerLetterService';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Modal } from '../components/common/Modal';
 import { formatDateDisplay } from '../utils/formatters';
+import { buildVerificationUrl } from '../utils/qrGenerator';
 import {
   Search,
   Filter,
@@ -309,7 +310,18 @@ export const IssuedCertificatesPage = () => {
                 <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Certificate ID</span>
                 <span className="text-base font-mono font-bold text-navy-950">{selectedCert.certificateId}</span>
               </div>
-              <StatusBadge type="status" value={selectedCert.status} />
+              <div className="flex items-center gap-2">
+                <a
+                  href={buildVerificationUrl(selectedCert.certificateId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white text-navy-900 border border-slate-300 font-semibold hover:bg-slate-50 text-xs transition shadow-xs"
+                >
+                  <span>Verify Portal</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
+                </a>
+                <StatusBadge type="status" value={selectedCert.status} />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

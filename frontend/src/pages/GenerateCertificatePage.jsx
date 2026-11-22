@@ -7,6 +7,7 @@ import { offerLetterService } from '../services/offerLetterService';
 import { exportElementToPdf, triggerPrint, generatePdfFilename } from '../services/pdfGeneratorService';
 import { getTodayInputString, calculateEndDate } from '../utils/formatters';
 import { storage } from '../utils/storage';
+import { buildVerificationUrl } from '../utils/qrGenerator';
 import { CheckCircle2, AlertCircle, ShieldAlert, ExternalLink } from 'lucide-react';
 
 export const GenerateCertificatePage = () => {
@@ -175,8 +176,27 @@ export const GenerateCertificatePage = () => {
       // 3. Generate the final high-resolution A4 landscape PDF and download locally
       const filename = generatePdfFilename('CERTIFICATE', issuedCert.holderName, issuedCert.certificateId);
       
-      // Wait a tick for preview DOM to update if ID was formatted
-      await new Promise((r) => setTimeout(r, 100));
+      // Wait for preview DOM and scannable QR code image to update with finalized certificate ID
+      if (formData.qrEnabled) {
+        const expectedUrl = buildVerificationUrl(issuedCert.certificateId);
+        let retries = 0;
+        while (retries < 30) {
+          const qrImg = previewRef.current?.querySelector('img[data-qr-url]');
+          if (
+            qrImg &&
+            qrImg.getAttribute('data-qr-url') === expectedUrl &&
+            qrImg.getAttribute('data-qr-loaded') === 'true' &&
+            qrImg.src &&
+            qrImg.src.startsWith('data:image')
+          ) {
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 50));
+          retries++;
+        }
+      } else {
+        await new Promise((r) => setTimeout(r, 100));
+      }
 
       await exportElementToPdf(previewRef.current, {
         filename,
@@ -250,6 +270,15 @@ export const GenerateCertificatePage = () => {
                   <span className="text-emerald-700">
                     Status: <strong>VALID</strong>
                   </span>
+                  <a
+                    href={buildVerificationUrl(successData.certificate.certificateId)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-white text-emerald-800 border border-emerald-300 font-semibold hover:bg-emerald-100 text-xs transition"
+                  >
+                    <span>Open Verification Portal</span>
+                    <ExternalLink className="w-3 h-3 text-emerald-600" />
+                  </a>
                 </div>
               )}
             </div>

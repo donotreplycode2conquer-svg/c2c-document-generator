@@ -1,5 +1,6 @@
 const Settings = require('../models/Settings');
 const { getDbStatus, connectDB } = require('../config/db');
+const config = require('../config/env');
 const logger = require('../utils/logger');
 
 /**
@@ -18,7 +19,7 @@ const getSettings = async (req, res) => {
         companyAddress: '',
         companyWebsite: '',
         authorizedSignatoryDesignation: 'Authorised Signatory',
-        verificationBaseUrl: process.env.PUBLIC_VERIFY_BASE_URL || 'https://code2conquer.com',
+        verificationBaseUrl: config.publicVerifyBaseUrl,
         defaultCertificateDesign: 'navy-blue',
         defaultOfferLetterDesign: 'corporate-classic',
         companyLogoBase64: '',
@@ -30,6 +31,14 @@ const getSettings = async (req, res) => {
 
   try {
     const settings = await Settings.getSingleton();
+    // Sanitize verificationBaseUrl in case legacy or random domain was stored in DB
+    if (
+      !settings.verificationBaseUrl ||
+      settings.verificationBaseUrl.includes('code2conquer.com') ||
+      !settings.verificationBaseUrl.includes('c2c-verification-portal.vercel.app')
+    ) {
+      settings.verificationBaseUrl = config.publicVerifyBaseUrl;
+    }
     return res.json({
       success: true,
       settings
@@ -61,6 +70,15 @@ const updateSettings = async (req, res) => {
     // Don't allow key or _id changes
     delete updateData.key;
     delete updateData._id;
+
+    // Sanitize verificationBaseUrl to prevent saving obsolete or random domains
+    if (
+      updateData.verificationBaseUrl &&
+      (updateData.verificationBaseUrl.includes('code2conquer.com') ||
+        !updateData.verificationBaseUrl.includes('c2c-verification-portal.vercel.app'))
+    ) {
+      updateData.verificationBaseUrl = config.publicVerifyBaseUrl;
+    }
 
     const settings = await Settings.findOneAndUpdate(
       { key: 'global_settings' },

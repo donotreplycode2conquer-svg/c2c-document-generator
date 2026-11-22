@@ -96,6 +96,18 @@ const renderElementToCanvas = async (element, orientation = 'portrait') => {
   const { wrapper, clone, dim } = createCleanOffscreenClone(element, orientation);
 
   try {
+    // Wait for all images (such as scannable QR codes, logos, stamps) in the cloned DOM to load completely
+    const images = Array.from(clone.querySelectorAll('img'));
+    await Promise.all(
+      images.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
+    );
+
     // Wait for DOM layout pass and SVG paint
     await new Promise((resolve) => setTimeout(resolve, 150));
 

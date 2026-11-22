@@ -43,7 +43,7 @@ This application is an internal corporate document generation and verification r
                                                           | (Future Project 2)
                                       +---------------------------------------------+
                                       |        Public Verification Website          |
-                                      |       https://verify.code2conquer.com       |
+                                      |  https://c2c-verification-portal.vercel.app |
                                       +---------------------------------------------+
 ```
 
@@ -142,7 +142,7 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin123
 ADMIN_PASSWORD_HASH=
 FRONTEND_ORIGIN=http://localhost:5173
-PUBLIC_VERIFY_BASE_URL=https://verify.code2conquer.com
+PUBLIC_VERIFY_BASE_URL=https://c2c-verification-portal.vercel.app
 ```
 
 ### Step D: Configure Frontend Environment Variables
@@ -151,6 +151,7 @@ Create or review `frontend/.env`:
 
 ```env
 VITE_API_BASE_URL=http://localhost:5000
+VITE_VERIFICATION_PORTAL_URL=https://c2c-verification-portal.vercel.app
 ```
 
 ---
@@ -242,7 +243,7 @@ npm run dev
 
 1. Click **Generate Certificate** in the sidebar.
 2. Choose **Certificate Type**:
-   - **[ With QR Code ]**: Embeds a crisp QR code linking to `https://verify.code2conquer.com/verify/<Certificate-ID>`.
+   - **[ With QR Code ]**: Embeds a crisp QR code linking to `https://c2c-verification-portal.vercel.app/verify/<Certificate-ID>`.
    - **[ Without QR Code ]**: Generates a clean certificate with the Certificate ID clearly displayed for manual verification.
 3. Fill in candidate information and review the live A4 landscape preview.
 4. Click **Issue & Register Certificate**.
