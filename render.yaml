@@ -21,7 +21,7 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: FRONTEND_ORIGIN
-        value: https://c2c-verification-portal.vercel.app
+        value: https://c2c-verification-portal.vercel.app,https://code2conquer-document-generator-frontend.onrender.com
       - key: PUBLIC_VERIFY_BASE_URL
         value: https://c2c-verification-portal.vercel.app
     healthCheckPath: /api/health
